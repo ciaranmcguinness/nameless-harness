@@ -6,4 +6,4 @@ A harness as small and hackable as possible.
 
 All in under .5 kloc.
 
-[https://asciinema.org/a/TWjksFnoDLMlYf0d](demo)
+[demo](https://asciinema.org/a/TWjksFnoDLMlYf0d)
