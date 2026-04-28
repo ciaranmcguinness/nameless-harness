@@ -20,7 +20,7 @@ class AgentMain():
         self.tools = [self.get_clear_notif(), self.get_remember(), self.get_forget()]
         self.lock = Lock()
         self.soul = soul
-        self.model = provider.get_model("openrouter/minimax/minimax-m2.5")
+        self.model = provider.get_model(config.model)
 
         self.channels = {}
         self.ws_server = None

@@ -6,3 +6,5 @@ provider = AnyLLMProvider(
 )
 
 openai_tracing_key = None
+
+model = "openrouter/shady dave/shady dave's abliterated model" #NOTE: DO NOT ACTUALLY GET YOUR MODELS FROM SHADY DAVE

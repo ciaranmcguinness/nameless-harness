@@ -10,3 +10,4 @@ config.py
 
 # Virtual environments
 .venv
+.vscode/settings.json
