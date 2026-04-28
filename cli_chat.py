@@ -13,14 +13,6 @@ async def send_messages(ws, session):
         try:
             msg = await session.prompt_async("\n> ")
             await channellib.simple_send_msg(msg, ws, True, "New message via CLI", 1)
-            payload = {
-                "notif_message": f"New message via CLI: {msg}",
-                "priority": 1,
-                "wake": True,
-                "message": msg
-            }
-            #print("Sending: ", payload)
-            await ws.send(json.dumps(payload))
         except KeyboardInterrupt:
             payload = {
                 "exit":True
