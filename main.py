@@ -130,7 +130,6 @@ The following are the contents of your memory:
                     if self.lock.acquire(False):
                         try:
                             wm = decoded.get("wake_message")
-                            print(wm)
                             if (self.channels[name]["tool"]) and (wm != None):
                                 wm += "Note, the following is an automated message: "
 

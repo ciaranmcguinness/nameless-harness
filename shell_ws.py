@@ -2,7 +2,7 @@ import asyncio
 import websockets
 import json
 import subprocess
-
+import channellib
 
 URI = "ws://127.0.0.1:8282"
 
@@ -63,14 +63,14 @@ async def handle_server(ws):
             cmd = data.get("command")
             if cmd == None:
                 await simple_send_msg("Invalid message, usage: {\"command\":\"command_name --example_arg\"}", ws, notif_message="There was an issue with your last message to shell channel.", wake="There was an issue with your last command.")
-            print(f"\n[exec] running \"{cmd}\"")
+            print(f"\n[shell] running \"{cmd}\"")
             result = run_command(cmd)
             response_text = json.dumps({
                 "command": cmd,
                 "output": result["output"],
                 "exit_code": result["exit_code"]
             })
-            print(f"\n[exec] \"{cmd}\" done. ({result["exit_code"]})\n[exec]{result["output"].split("\n")}")
+            print(f"\n[shell] \"{cmd}\" done. ({result["exit_code"]})\n[shell]{result["output"].split("\n")}")
             await simple_send_msg(
                 response_text,
                 ws,
@@ -86,16 +86,9 @@ async def handle_server(ws):
 
 async def main():
     async with websockets.connect(URI) as ws:
-        # register
-        await ws.send(
-            json.dumps({
-                "name": "Shell",
-                "description": "Channel for shell calls. Run using json of shape  {\"command\":\"command_name --example_arg\"}",
-                "tool":True
-            })
-        )
+        await channellib.intro("Shell", "Channel for shell calls. Run using json of shape  {\"command\":\"command_name --example_arg\"}", ws, True)
 
-        print("[exec] ready")
+        print("[shell] ready")
 
         await handle_server(ws)
 

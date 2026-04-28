@@ -4,6 +4,7 @@ import json
 import sys
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
+import channellib
 
 URI = "ws://127.0.0.1:8282"
 
@@ -61,10 +62,7 @@ async def main():
     session = PromptSession()
 
     async with websockets.connect(URI) as ws:
-        await ws.send(json.dumps({
-            "name": "CLI chat",
-            "description": '''CLI based chat interface.\nTo send a message, send a JSON object with the key "text", it's value being the text you want to send.'''
-        }))
+        await channellib.intro("CLI chat", 'CLI based chat interface.\nTo send a message, send a JSON object with the key "text", it\'s value being the text you want to send.', ws)
         print("[Chat] ready")
         with patch_stdout():
             await asyncio.gather(
