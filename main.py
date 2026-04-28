@@ -95,7 +95,7 @@ The following are the contents of your memory:
 
     def setup_channels(self):
         def handler(conn:ServerConnection):
-            info = None
+            info = {}
             try:
                 info = json.loads(conn.recv())
             except:
@@ -114,7 +114,7 @@ The following are the contents of your memory:
                     continue
                 if decoded.get("exit", False):
                     print("exiting")
-                    self.ws_server.shutdown()
+                    self.ws_server.shutdown() # type: ignore
                 if (True in [decoded.get("notif_message") != None, decoded.get("wake") != None, decoded.get("message") != None]):
                     self.channels[name]["messages"].append({"timestamp":time.localtime(), "from":decoded.get("sender",name)})
 
@@ -209,7 +209,7 @@ The following are the contents of your memory:
         agent = Agent(
             name="Agent",
             instructions = self.get_instructions_outer(),
-            tools=self.tools,
+            tools=self.tools, # type: ignore
             model=self.model,
         )
         
@@ -249,7 +249,7 @@ def start():
     mem = mem.strip()
     am = AgentMain(mem, soul)
     print("[Agent Main] Running on localhost:8282")
-    am.ws_server.serve_forever()
+    am.ws_server.serve_forever() # type: ignore
     print("[Agent Main] exiting!")
     mem = am.memory
     with open("memory.txt", "w") as f:
