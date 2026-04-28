@@ -7,20 +7,6 @@ import channellib
 URI = "ws://127.0.0.1:8282"
 
 
-async def simple_send_msg(msg, ws, wake=None, notif_message=None, priority=None):
-    payload = {
-        "message": msg
-    }
-    if wake is not None:
-        payload["wake"] = wake
-    if notif_message is not None:
-        payload["notif_message"] = notif_message
-    if priority is not None:
-        payload["priority"] = priority
-
-    await ws.send(json.dumps(payload))
-
-
 def run_command(cmd: str):
     print(cmd)
     """Execute shell command and return output + exit code."""
@@ -58,11 +44,11 @@ async def handle_server(ws):
             try:
                 data = json.loads(msg)
             except json.JSONDecodeError:
-                simple_send_msg("Invalid json!", ws, notif_message="Previous command encountered an error.", wake="Previous command encountered an error.")
+                await channellib.simple_send_msg("Invalid json!", ws, notif_message="Previous command encountered an error.", wake="Previous command encountered an error.")
 
             cmd = data.get("command")
             if cmd == None:
-                await simple_send_msg("Invalid message, usage: {\"command\":\"command_name --example_arg\"}", ws, notif_message="There was an issue with your last message to shell channel.", wake="There was an issue with your last command.")
+                await channellib.simple_send_msg("Invalid message, usage: {\"command\":\"command_name --example_arg\"}", ws, notif_message="There was an issue with your last message to shell channel.", wake="There was an issue with your last command.")
             print(f"\n[shell] running \"{cmd}\"")
             result = run_command(cmd)
             response_text = json.dumps({
@@ -71,7 +57,7 @@ async def handle_server(ws):
                 "exit_code": result["exit_code"]
             })
             print(f"\n[shell] \"{cmd}\" done. ({result["exit_code"]})\n[shell]{result["output"].split("\n")}")
-            await simple_send_msg(
+            await channellib.simple_send_msg(
                 response_text,
                 ws,
                 notif_message=f"Command executed: {cmd}",

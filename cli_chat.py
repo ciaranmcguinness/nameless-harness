@@ -12,7 +12,7 @@ async def send_messages(ws, session):
     while True:
         try:
             msg = await session.prompt_async("\n> ")
-
+            await channellib.simple_send_msg(msg, ws, True, "New message via CLI", 1)
             payload = {
                 "notif_message": f"New message via CLI: {msg}",
                 "priority": 1,
@@ -42,14 +42,7 @@ async def receive_messages(ws):
                     print(f"[Server] {m}")
                 else:
                     print(f"Error: {message}")
-                    msg = 'The previous message failed to parse. Reminder: this channel\'s schema is {"text":[your message]}.'
-                    payload = {
-                        "notif_message": f'Error: "{msg}"',
-                        "priority": 1,
-                        "wake": "There has been an error with the previous message.",
-                        "message": msg
-                    }
-                    await ws.send(json.dumps(payload))
+                    await channellib.simple_send_msg('The previous message failed to parse. Reminder: this channel\'s schema is {"text":[your message]}.', ws, True, "Invalid Json on last call to shell.")
             except json.JSONDecodeError:
                 print(f"[Server Raw] {message}")
         except websockets.ConnectionClosed:

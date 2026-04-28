@@ -49,6 +49,7 @@ class AgentMain():
             """
             Remember the information specified.
             Use this for anything from tasks in progress to any speedbumps you've hit.
+            Also use it for personal housekeeping, such as how you're feeling and any ideas things such as improvements to your harness and channels or personal projects.
             """
             proto = self.memory + "\n" + info
             if len(info.split("\n")) > 4096:
