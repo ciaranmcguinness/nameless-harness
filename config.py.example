@@ -1,0 +1,8 @@
+from agents.extensions.models.any_llm_provider import AnyLLMProvider
+
+provider = AnyLLMProvider(
+#    base_url="API PROVIDER URL HERE",
+    api_key="YOUR KEY HERE"
+)
+
+openai_tracing_key = None
