@@ -143,7 +143,7 @@ The following are the contents of your memory:
         self.ws_server = serve(handler, host='127.0.0.1', port=8282)
 
         @function_tool
-        def list_channels(tool:bool = False):
+        def list_channels(tool:bool):
             """
             List all connected channels. 
             """
@@ -172,7 +172,7 @@ The following are the contents of your memory:
                 return "Unknown channel"
             
         @function_tool
-        def send_message(message:str, tool:bool = False) -> str:
+        def send_message(message:str, tool:bool) -> str:
             """
             Send a message to the active channel. Messages must be formatted as json. Schemas may be found in the channel's description.
             """
