@@ -1,7 +1,7 @@
 import threading
 import main
-import cli_chat
-import shell_ws
+import channels.cli_chat as cli_chat
+import channels.shell_ws as shell_ws
 
 def start(target, d=False):
     t = threading.Thread(target=target)
