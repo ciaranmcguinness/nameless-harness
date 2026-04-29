@@ -115,7 +115,7 @@ The following are the contents of your memory:
                 if decoded.get("exit", False):
                     print("exiting")
                     self.ws_server.shutdown() # type: ignore
-                if (True in [decoded.get("notif_message") != None, decoded.get("wake") != None, decoded.get("message") != None]):
+                if (True in [decoded.get("notif_message") != None, decoded.get("wake_message") != None, decoded.get("message") != None]):
                     self.channels[name]["messages"].append({"timestamp":time.localtime(), "from":decoded.get("sender",name)})
 
                 if decoded.get("message") != None:
@@ -128,9 +128,11 @@ The following are the contents of your memory:
                     print(f"[Agent main] level {decoded.get("priority",3)} notification recived: ", decoded["notif_message"])
 
                 if decoded.get("wake", False):
+                    if self.channels[name]["messages"][-1].get("text") == None:
+                        self.channels[name]["messages"][-1]["text"] = decoded["wake_message"]
                     if self.lock.acquire(False):
                         try:
-                            wm = decoded.get("wake_message")
+                            wm = decoded.get("wake_message", self.channels[name]["messages"][-1]["text"])
                             if (self.channels[name]["tool"]) and (wm != None):
                                 wm += "Note, the following is an automated message: "
 
