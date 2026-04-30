@@ -1,6 +1,6 @@
-from agents.extensions.models.any_llm_provider import AnyLLMProvider
+from agents import ModelSettings, OpenAIProvider
 
-provider = AnyLLMProvider(
+provider = OpenAIProvider(
 #    base_url="API PROVIDER URL HERE",
     api_key="YOUR KEY HERE"
 )
@@ -8,3 +8,5 @@ provider = AnyLLMProvider(
 openai_tracing_key = None
 
 model = "openrouter/shady dave/shady dave's abliterated model" #NOTE: DO NOT ACTUALLY GET YOUR MODELS FROM SHADY DAVE
+
+msettings = ModelSettings()

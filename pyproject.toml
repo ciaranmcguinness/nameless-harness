@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "openai-agents[any-llm]>=0.13.6",
+    "openai-agents>=0.13.6",
     "prompt-toolkit>=3.0.52",
     "websocket-server>=0.6.4",
     "websockets>=16.0",

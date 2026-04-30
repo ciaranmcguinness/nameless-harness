@@ -7,7 +7,7 @@ wheels/
 *.egg-info
 *.db
 config.py
-
+uv.lock
 # Virtual environments
 .venv
 .vscode/settings.json

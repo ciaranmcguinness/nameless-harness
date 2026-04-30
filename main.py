@@ -213,6 +213,7 @@ The following are the contents of your memory:
             instructions = self.get_instructions_outer(),
             tools=self.tools, # type: ignore
             model=self.model,
+            model_settings=config.msettings
         )
         
         hist = self.channels[self.active_chat_channel]["messages"][-5:]
