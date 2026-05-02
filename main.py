@@ -1,4 +1,5 @@
-from agents import Agent, Runner, function_tool, set_tracing_export_api_key, set_tracing_disabled
+from agents import Agent, Runner, function_tool, set_tracing_export_api_key, set_tracing_disabled, StopAtTools
+from openai.types.responses import ResponseFunctionToolCall
 from websockets.sync.server import serve
 from websockets.sync.server import ServerConnection
 import json
@@ -17,7 +18,8 @@ class AgentMain():
     def __init__(self, memory, soul):
         self.notifications = {1:[],2:[],3:[]}
         self.memory = memory
-        self.tools = [self.get_clear_notif(), self.get_remember(), self.get_forget()]
+        self.tools = [self.get_clear_notif(), self.get_refresh()]
+        self.add_mem_tools()
         self.lock = Lock()
         self.soul = soul
         self.model = provider.get_model(config.model)
@@ -34,7 +36,7 @@ class AgentMain():
             """
             Clear the notification at the specified priority and index. 
             An index of 0 deletes the oldest notification.
-            Make sure to clear notifications you no longer need, as they are not automatically cleared.
+            Make sure to clear unneeded notifications, as they are not automatically cleared.
             """
             if index >= len(self.notifications[priority]):
                 return "Index out of range."
@@ -43,13 +45,16 @@ class AgentMain():
                 return f"Success. Notification \"{x}\" cleared."
         return clear_notification
 
-    def get_remember(self):
+    def add_mem_tools(self):
         @function_tool
         def remember(info:str):
             """
-            Remember the information specified.
-            Use this for anything from tasks in progress to any speedbumps you've hit.
-            Also use it for personal housekeeping, such as how you're feeling and any ideas things such as improvements to your harness and channels or personal projects.
+Remember the information specified.
+Use this for anything from tasks in progress to any speedbumps you've hit.
+Especially any particulars of your tools that required you retry using them.
+If you didn't guess the tool's schema, it should probably go in memory.
+Also use it for personal housekeeping, such as how you're feeling and any ideas things such as improvements to your harness and channels or personal projects.
+It is better to remember unnessary thoughts than to forget important ones.
             """
             proto = self.memory + "\n" + info
             if len(info.split("\n")) > 4096:
@@ -58,9 +63,7 @@ class AgentMain():
                 return "Memory too full, forget some stuff."
             self.memory = proto
             return "Success!"
-        return remember
         
-    def get_forget(self):
         @function_tool
         def forget(lines:int,start:int = 0):
             """
@@ -68,13 +71,35 @@ class AgentMain():
             """
             if start+lines > len(self.memory):
                 return "Trying to forget out of bounds!"
-            self.memory = (self.memory[0:start] + self.memory[start+lines:])
+            self.memory = "\n".join(self.memory.split("\n")[0:start] + self.memory.split("\n")[start+lines:])
             return "Success"
-        return forget
+        
+        @function_tool
+        def replace(search:str, edit:str):
+            """
+Replace the specified search string with the edit string in your memory.
+            """
+            self.memory.replace(search, edit)
+            return "Success"
 
+        self.tools.extend([remember, forget, replace])
+
+    def get_refresh(self):
+        @function_tool
+        def refresh(message: str):
+            f"""
+Refresh your thinking, clearing out old ideas. Use this after ~{config.warn_turns} tool calls, depending on how hard you thought and how much each tool call returned.
+Only the message you specify when calling this, your chat history, and your memory will be preserved. So make sure to use your memory."""
+            return message
+        return refresh
+    
     def get_instructions_outer(self):
         def dynamic_instructions(ctx, agent):
+            sr = (True in [(ctx.usage.requests > config.warn_turns), (ctx.usage.total_tokens > config.warn_tokens)])
             m = self.memory.strip()
+            ref = ""
+            if sr:
+                ref = "\nWarning: Your context is quite full. You should offload your thinking into your memory and refresh."
             if m == "":
                 m = "(There is currently nothing in your memory.)"
             notifproto = ""
@@ -84,8 +109,11 @@ class AgentMain():
             if notifproto != "":
                 notifproto = f"\nThe following are your notifications:\n{notifproto}"
             out =  f"""{self.soul}
-If you ever seem to be stuck in a loop or something is completely broken, just alert the user and return.
-Make sure to make liberal use of your memory, as your thinking is not preserved after you return. It is very high capacity, so make sure to lean towards over using it.
+Make sure to make liberal use of your memory, as your thinking is not preserved after you return/refresh.
+It is very high capacity, so make sure to lean towards over using it.
+Find ways to simplify and automate what you are doing. You should only use curl and raw json rarely for tasks you don't forsee yourself needing to do again.
+You are opperating under your own user account, so use your home directory accordingly.{ref}
+When writing code, use your channels to write to a file and test the code, instead of sending the code to the user via chat.
 You need to use sending via channels to use your tools, all regular outputs are forwarded to the current chat channel.
 Your currently selected chat channel is "{self.active_chat_channel}" and your active tool channel is "{self.active_tool_channel}". It's description is "{self.channels[self.active_tool_channel]["description"]}".
 The following are the contents of your memory:
@@ -203,7 +231,7 @@ The following are the contents of your memory:
                 ac = self.active_chat_channel
             msgs = self.channels[ac]["messages"][0-((page+1)*count):][:count]
             return "\n".join([f"<{time.strftime("%d %b, %H:%M:%S",msg["timestamp"])}> ({msg["from"]}): {msg["text"]}" for msg in msgs])
-        self.tools += [list_channels, set_active_channel,send_message,read_messages]
+        self.tools.extend([list_channels, set_active_channel,send_message,read_messages])
 
     def run(self, inp=None):
         print("[Agent Main] Agent running!")
@@ -213,7 +241,8 @@ The following are the contents of your memory:
             instructions = self.get_instructions_outer(),
             tools=self.tools, # type: ignore
             model=self.model,
-            model_settings=config.msettings
+            model_settings=config.msettings,
+            tool_use_behavior=StopAtTools(stop_at_tool_names=["refresh"])
         )
         
         hist = self.channels[self.active_chat_channel]["messages"][-5:]
@@ -226,15 +255,22 @@ The following are the contents of your memory:
 
         if inp != None:
             ctx.append({"role":"user", "content":inp})
-        #print(ctx)
-        #out = Runner.run_sync(agent, "(Note: The following is an automated message.) "+ inp, max_turns=24)
-        out = Runner.run_sync(agent, ctx, max_turns=24).final_output
-        self.channels[self.active_chat_channel]["client"].send(json.dumps({"text":out}))
-        self.channels[self.active_chat_channel]["messages"].append({"timestamp":time.localtime(), "from":"You", "text":out})
-        print("[Agent Main] Agent done!")
-        #for r in out.raw_responses:
-        #    print(r)
+        refmsg = ""
 
+        while True:
+            lctx = ctx.copy()
+            if refmsg != "":
+                lctx.append({"role":"user","content":f"Note, you just refreshed your context. The message you left yourself is: " + refmsg})
+            res = Runner.run_sync(agent, lctx, max_turns=config.max_turns)
+            out = res.final_output
+
+            if isinstance(res.raw_responses[-1].output[-1], ResponseFunctionToolCall):
+                refmsg = out
+            else:
+                self.channels[self.active_chat_channel]["client"].send(json.dumps({"text":out}))
+                self.channels[self.active_chat_channel]["messages"].append({"timestamp":time.localtime(), "from":"You", "text":out})
+                print("[Agent Main] Agent done!")
+                break
 
 def start():
     soul = ""

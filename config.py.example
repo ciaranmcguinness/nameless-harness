@@ -10,3 +10,7 @@ openai_tracing_key = None
 model = "openrouter/shady dave/shady dave's abliterated model" #NOTE: DO NOT ACTUALLY GET YOUR MODELS FROM SHADY DAVE
 
 msettings = ModelSettings()
+
+max_turns = 24
+warn_turns = 20
+warn_tokens = 40000
